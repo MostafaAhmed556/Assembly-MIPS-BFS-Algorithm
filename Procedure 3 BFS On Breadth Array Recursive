@@ -1,0 +1,63 @@
+.data
+size: .word 15
+target: .word 1
+array: .word 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+.text
+.globl main
+main:
+    la $a0, array # load the address of the array into $a0
+    lw $a1, size # load the size of the array into $a1
+    lw $a2,target
+    jal BFSonBreadthArray
+    move $a0,$v0
+    li $v0,1
+    syscall
+exit:
+    # exit the program
+    li $v0, 10
+    syscall
+    
+BFSonBreadthArray:
+li $t0,0# index to access array
+li $v0,-1#assume element wasnot found at first
+li $t7,-1# a register represents -1
+Recursion:
+addi $sp,$sp,-4
+sw $ra,0($sp)
+beq $t0,$a1,END
+sll $t1,$t0,2
+add $t1,$t1,$a0
+lw $t2,0($t1)#element in $t2
+beq $t2,$a2,Found
+addi $t0,$t0,1
+jal Recursion
+END:
+lw $ra,0($sp)
+addi $sp,$sp,4
+jr $ra
+Found:
+addi $sp,$sp,-8
+sw $a0,0($sp)
+sw $ra,4($sp)
+move $a0,$t0#argument=i+1
+addi $a0,$a0,1#i++ for correct calculations
+jal CalculateCurrentLevel
+lw $a0,0($sp)
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+#$a0 is i+1
+CalculateCurrentLevel:
+move $v0,$t0
+addi $v0,$v0,1
+Recursionlevel:
+addi $sp,$sp,-4
+sw $ra,0($sp)
+beqz $v0,Finish
+srl $v0,$v0,1
+jal Recursionlevel
+addi $v0,$v0,1
+Finish:
+lw $ra,0($sp)
+addi $sp,$sp,4
+jr $ra

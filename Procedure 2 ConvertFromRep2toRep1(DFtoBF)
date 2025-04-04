@@ -1,0 +1,70 @@
+.data
+size: .word 15
+array: .word 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+.text
+.globl main
+main:
+    la $a0, array # load the address of the array into $a0
+    lw $a1, size # load the size of the array into $a1
+    jal ConvertFromRep2toRep1DFtoBF# call the ConvertFromRep1toRep2BFtoDF procedure
+
+    # print the new array
+    move $t0, $v0 # start of the new array
+    lw $t1,size # size of the new array
+    j print_loop
+    
+    print_loop:
+    beqz $t1, exit # if size is 0, exit the loop
+    lw $t2, 0($t0) # load the current element into $t2
+
+    # print the current element
+    li $v0, 1
+    move $a0, $t2
+    syscall
+
+    # print a space
+    li $v0, 11 # system call for printing a character
+    li $a0, 32 # ASCII value for space
+    syscall
+
+    # increment the array pointer and decrement the size
+    addiu $t0, $t0, 4
+    addiu $t1, $t1, -1
+    j print_loop
+
+exit:
+    # exit the program
+    li $v0, 10
+    syscall
+  
+    #address in $a0,size in $a1
+ConvertFromRep2toRep1DFtoBF:
+li $t0,0#outputIndex that always increments by 1
+li $t1,0#used for inputIndex
+#we will at all times make $v0 is the return address remaining unchanged,lets initialize it
+#lest make the address right after input tree ends
+sll $a1,$a1,2#convert it to offset
+add $v0,$a0,$a1#now new return address is ready to be returned
+srl $a1,$a1,2#convert it to size
+Recursion:
+addi $sp,$sp,-8#one slot for $ra and other for index of intput tree index
+sw $ra,0($sp)
+sw $t1,4($sp)
+bge $t1,$a1,End#if(inputIndex>=input.size())return;
+sll $t2,$t0,2
+sll $t3,$t1,2
+add $t2,$a0,$t2#input[i] of input
+add $t3,$v0,$t3#output[i] of output
+lw  $t4,0($t2)
+sw  $t4,0($t3)#output[i]=input[i]
+addi $t0,$t0,1#outputIndex++
+sll $t1,$t1,1
+addi $t1,$t1,1#2*inputindex+1
+jal Recursion
+addi $t1,$t1,1#2*inputindex+2
+jal Recursion
+End:
+lw $ra,0($sp)
+lw $t1,4($sp)
+addi $sp,$sp,8
+jr $ra

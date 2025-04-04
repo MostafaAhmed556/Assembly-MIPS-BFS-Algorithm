@@ -1,0 +1,106 @@
+.data
+size: .word 15
+target: .word 1
+array: .word 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+.text
+.globl main
+main:
+    la $a0, array # load the address of the array into $a0
+    lw $a1, size # load the size of the array into $a1
+    lw $a2,target
+    jal ConvertFromRep2toRep1DFtoBF
+    move $a0,$v0
+    jal BFSonBreadthArray
+    move $a0,$v0
+    li $v0,1
+    syscall
+exit:
+    # exit the program
+    li $v0, 10
+    syscall
+
+    #address in $a0,size in $a1
+ConvertFromRep2toRep1DFtoBF:
+li $t0,0#outputIndex that always increments by 1
+li $t1,0#used for inputIndex
+#we will at all times make $v0 is the return address remaining unchanged,lets initialize it
+#lest make the address right after input tree ends
+sll $a1,$a1,2#convert it to offset
+add $v0,$a0,$a1#now new return address is ready to be returned
+srl $a1,$a1,2#convert it to size
+Recursion:
+addi $sp,$sp,-8#one slot for $ra and other for index of intput tree index
+sw $ra,0($sp)
+sw $t1,4($sp)
+bge $t1,$a1,End#if(inputIndex>=input.size())return;
+sll $t2,$t0,2
+sll $t3,$t1,2
+add $t2,$a0,$t2#input[i] of input
+add $t3,$v0,$t3#output[i] of output
+lw  $t4,0($t2)
+sw  $t4,0($t3)#output[i]=input[i]
+addi $t0,$t0,1#outputIndex++
+sll $t1,$t1,1
+addi $t1,$t1,1#2*inputindex+1
+jal Recursion
+addi $t1,$t1,1#2*inputindex+2
+jal Recursion
+End:
+lw $ra,0($sp)
+lw $t1,4($sp)
+addi $sp,$sp,8
+jr $ra
+
+BFSonBreadthArray:
+li $t0,0# index to access array
+li $v0,-1#assume element wasnot found at first
+li $t7,-1# a register represents -1
+RecursionConversion:
+addi $sp,$sp,-4
+sw $ra,0($sp)
+beq $t0,$a1,END
+sll $t1,$t0,2
+add $t1,$t1,$a0
+lw $t2,0($t1)#element in $t2
+beq $t2,$a2,Found
+addi $t0,$t0,1
+jal RecursionConversion
+
+
+END:
+lw $ra,0($sp)
+addi $sp,$sp,4
+jr $ra
+
+
+Found:
+addi $sp,$sp,-8
+sw $a0,0($sp)
+sw $ra,4($sp)
+move $a0,$t0#argument=i+1
+addi $a0,$a0,1#i++ for correct calculations
+jal CalculateCurrentLevel
+lw $a0,0($sp)
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+#$a0 is i+1
+
+
+CalculateCurrentLevel:
+move $v0,$t0
+addi $v0,$v0,1
+
+Recursionlevel:
+addi $sp,$sp,-4
+sw $ra,0($sp)
+beqz $v0,Finish
+srl $v0,$v0,1
+jal Recursionlevel
+addi $v0,$v0,1
+
+Finish:
+lw $ra,0($sp)
+addi $sp,$sp,4
+jr $ra
+
